@@ -1,6 +1,7 @@
 package com.example.webclient.demo.domain;
 
 import com.example.webclient.demo.repsitory.User;
+import com.example.webclient.demo.repsitory.Workpart;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.core.ParameterizedTypeReference;
@@ -18,6 +19,7 @@ import java.util.List;
 
 @RestController
 public class HelloController {
+    private static final String HOST = "http://localhost:8080/";
 
     private static final Log log = LogFactory.getLog(HelloController.class);
 
@@ -30,33 +32,48 @@ public class HelloController {
                 , new User("sounds good to me","yy@POP"));
     }
 
+    @GetMapping("/slow-service-workparts")
+    public List<Workpart> getAllWorkPart() throws InterruptedException {
+        Thread.sleep(3000L);
+        return Arrays.asList(
+                new Workpart("ps", "awesome")
+                , new Workpart("my", "friend")
+                , new Workpart("Thread", "Local")
+                , new Workpart("MSA", "Cloud Native")
+        );
+    }
+
     @GetMapping(value = "/blocking")
-    public List<User> getBlocking2() throws ClassNotFoundException {
+    public <T> List<T> getBlocking() {
         log.info("Starting BLOCKING");
-        String uri = getSlowServiceUri();
+        String uri = getSlowServiceUri(getType());
         var restTemplate = new RestTemplate();
-        ResponseEntity<List<User>> response = restTemplate.exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<List<User>>() {});
-        List<User> result = response.getBody();
+        ResponseEntity<List<T>> response = restTemplate.exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<List<T>>() {});
+        List<T> result = response.getBody();
         result.forEach(o -> log.info(o.toString()));
         log.info("Exiting BLOCKING");
         return result;
     }
 
     @GetMapping(value = "/non-blocking", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<User>  getNonBlocking(){
+    public <T> Flux<T>  getNonBlocking(){
         log.info("Starting NON_BLOCKING");
-        Flux<User> flux = (Flux<User>) WebClient.create()
+        Flux<T> flux = (Flux<T>) WebClient.create()
                 .get()
-                .uri(getSlowServiceUri())
+                .uri(getSlowServiceUri(getType()))
                 .retrieve()
-                .bodyToFlux(User.class);
+                .bodyToFlux(Object.class);
         flux.subscribe(obj -> log.info(obj.toString()));
         log.info("Exiting NON-BLOCKING");
         return flux;
     }
 
-    private String getSlowServiceUri() {
-        return "http://localhost:8080/slow-service-users";
+    private String getSlowServiceUri(boolean getA) {
+        return getA ? HOST.concat("/slow-service-users") : HOST.concat("/slow-service-workparts");
     }
 
+    private boolean getType(){
+        double v = ((int)(Math.random() * 10)) % 2;
+        return v == 1 ? true : false;
+    }
 }
