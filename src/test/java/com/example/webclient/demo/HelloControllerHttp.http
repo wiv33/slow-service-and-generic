@@ -10,6 +10,10 @@ GET http://localhost:8080/blocking
 
 ###
 
+GET http://localhost:8080/blocking2
+
+###
+
 GET http://localhost:8080/non-blocking
 
 ###
