@@ -46,7 +46,7 @@ public class HelloController {
     @GetMapping(value = "/blocking2")
     public List<User> getBlocking2() {
         log.info("Starting BLOCKING");
-        String uri = getSlowServiceUri(getType());
+        String uri = getSlowServiceUri(true);
         var restTemplate = new RestTemplate();
         ResponseEntity<List<User>> response = restTemplate.exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<List<User>>() {});
         List<User> result = response.getBody();
